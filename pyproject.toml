@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linkedin-auto"
+version = "0.1.0"
+description = "LinkedIn Easy Apply 自动投递系统 - 纯规则引擎，0 LLM 依赖"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "BendyLin", email = "bendylin123@gmail.com"}
+]
+keywords = ["linkedin", "easy-apply", "automation", "job-search", "playwright"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Office/Business",
+]
+dependencies = [
+    "playwright>=1.40",
+    "pydantic>=2.8",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "apscheduler>=3.10",
+    "click>=8.1",
+]
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.4", "mypy>=1.10"]
+
+[project.entry-points]
+console_scripts = [
+    "linkedin-auto = linkedin.cli:main",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "W", "UP", "B", "C4", "ARG001", "ARG002"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]

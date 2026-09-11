@@ -1,0 +1,113 @@
+# LinkedIn Auto Apply 配置
+# 复制为 config.yaml 并根据需要修改
+
+# 搜索配置
+search:
+  keywords:
+    - "AI sales"
+    - "SaaS sales"
+    - "technical sales"
+    - "solution consultant"
+    - "pre-sales"
+    - "AI implementation"
+    - "AI solution consultant"
+  location: "Hong Kong"
+  easy_apply_only: true
+  days_back: 30  # 近 N 天发布的职位
+
+# 投递限制
+limits:
+  max_jobs_per_run: 10        # 每轮最多投递岗位数
+  max_jobs_per_day: 40        # 每日最多投递岗位数
+  min_interval_seconds: 30    # 岗位间最小间隔(秒)
+  max_interval_seconds: 90    # 岗位间最大间隔(秒)
+  break_every: 5              # 每投 N 个岗位长休一次
+  break_min_seconds: 300      # 长休最小秒数 (5分钟)
+  break_max_seconds: 600      # 长休最大秒数 (10分钟)
+
+# 简历配置
+resume:
+  path: "C:/Users/林耀国/Desktop/BendyLin_Resume0903.pdf"  # 修改为你的简历路径
+  # 备用简历（可选）
+  # alt_path: "C:/path/to/chinese_resume.pdf"
+
+# 浏览器配置
+browser:
+  headless: false              # 无头模式（建议 false，方便处理验证码）
+  channel: "chrome"            # chrome / msedge
+  profile_dir: "data/linkedin_profile"  # 持久化 profile 目录（相对项目根目录）
+  # 以下不建议修改
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+# 会话配置
+session:
+  timeout_seconds: 300        # 手动登录等待超时(秒)
+  no_login_prompt: true       # 无人值守模式：会话失效直接退出
+
+# 调度配置
+schedule:
+  enabled: true
+  interval_hours: 4           # 每 N 小时运行一次
+  start_hour: 8               # 开始时间(小时)
+  end_hour: 22                # 结束时间(小时)
+  timezone: "Asia/Shanghai"
+
+# 过滤规则
+filters:
+  # 标题黑名单（不投递的关键词）
+  title_blacklist:
+    - "intern"
+    - "实习"
+    - "junior"
+    - "entry level"
+    - "fresh grad"
+    - "graduate"
+    - "cleaning"
+    - "driver"
+    - "warehouse"
+  
+  # 地点黑名单
+  location_blacklist:
+    - "india"
+    - "manila"
+    - "jakarta"
+    - "bangkok"
+    - "philippines"
+    - "vietnam"
+    - "thailand"
+
+# 答案引擎配置
+answers:
+  # 工作经验（年）
+  years_experience: 3
+  # 期望薪资（年薪/月薪，单位：人民币/港币/美元视职位货币而定）
+  expected_salary_year: 360000
+  expected_salary_month: 30000
+  # 语言能力
+  languages:
+    "english": "fluent"
+    "chinese": "native"
+    "mandarin": "native"
+    "cantonese": "conversational"
+  # 签证状态
+  visa_status: "permanent_resident"  # permanent_resident / citizen / work_visa / needs_sponsorship
+  # 通知期（周）
+  notice_weeks: 4
+  # 是否合法工作授权
+  authorized_to_work: true
+  # 最高学历
+  education_level: "bachelor"  # high_school / bachelor / master / phd
+  
+# 日志配置
+logging:
+  level: "INFO"
+  file: "data/linkedin_auto.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# 通知配置（可选）
+notify:
+  enabled: false
+  # serverchan_sendkey: ""
+  # dingtalk_webhook: ""
+  # email_smtp: ""
