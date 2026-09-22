@@ -1,0 +1,13 @@
+[Unit]
+Description=LinkedIn Auto Apply (single round, ~10 jobs)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/linkedin-auto
+ExecStart=/usr/local/bin/linkedin-run.sh
+TimeoutStartSec=3600
+Nice=10
+# 耗时统计：10 岗 × (30-90s 间隔 + 处理) + 每 5 岗长休 6-9 分钟 ≈ 20-40 分钟

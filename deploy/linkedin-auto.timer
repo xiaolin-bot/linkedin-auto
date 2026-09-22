@@ -1,0 +1,11 @@
+[Unit]
+Description=LinkedIn Auto Apply timer (08/12/16/20 HKT, +/- 5min jitter)
+
+[Timer]
+OnCalendar=*-*-* 08,12,16,20:00:00 Asia/Hong_Kong
+RandomizedDelaySec=300
+Persistent=true
+Unit=linkedin-auto.service
+
+[Install]
+WantedBy=timers.target

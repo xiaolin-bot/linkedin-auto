@@ -4,30 +4,70 @@
 同一 profile：cookie、localStorage、指纹全部持久化，
 避免每次冷启动被 LinkedIn 判定"新设备"而吊销 li_at。
 
-运行：python login_linkedin.py
+运行（本机/服务器通用）：python login_linkedin.py
+服务器无桌面时：先跑 deploy/login-vnc.sh 再通过 VNC 操作（见 deploy/README.md）
+
+数据目录解析顺序（可用环境变量 LINKEDIN_DATA_DIR 覆盖）：
+  1. LINKEDIN_DATA_DIR
+  2. C:/freelance-auto/data（若存在，兼容旧部署）
+  3. 本项目 ./data
 """
+import os
 import sys
 import time
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-from playwright.sync_api import sync_playwright
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-PROFILE_DIR = Path("C:/freelance-auto/data/linkedin_profile")
+from playwright.sync_api import sync_playwright  # noqa: E402
+
+BASE = Path(__file__).resolve().parent
+if os.environ.get("LINKEDIN_DATA_DIR"):
+    DATA_DIR = Path(os.environ["LINKEDIN_DATA_DIR"])
+elif Path("C:/freelance-auto/data").exists():
+    DATA_DIR = Path("C:/freelance-auto/data")
+else:
+    DATA_DIR = BASE / "data"
+os.environ.setdefault("LINKEDIN_DATA_DIR", str(DATA_DIR))
+PROFILE_DIR = DATA_DIR / "linkedin_profile"
+PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+
+_CHANNEL = (os.environ.get("LINKEDIN_CHANNEL") or "chrome").strip() or "chrome"
+_LAUNCH_ARGS = [
+    "--start-maximized",
+    "--disable-blink-features=AutomationControlled",
+    "--disable-infobars",
+]
+if os.environ.get("LINKEDIN_NO_SANDBOX") == "1":
+    _LAUNCH_ARGS.append("--no-sandbox")  # 云服务器 root 环境必需
+
+
+def _launch(p):
+    """channel 回退：chrome → 自带 chromium（服务器没装 Chrome 也能用）。"""
+    channels = [None] if _CHANNEL == "chromium" else [_CHANNEL, None]
+    last_err = None
+    for ch in channels:
+        try:
+            kwargs = {
+                "user_data_dir": str(PROFILE_DIR),
+                "headless": False,
+                "args": _LAUNCH_ARGS,
+                "viewport": None,
+            }
+            if ch:
+                kwargs["channel"] = ch
+            ctx = p.chromium.launch_persistent_context(**kwargs)
+            print(f"浏览器启动 (channel={ch or 'bundled-chromium'})")
+            return ctx
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            print(f"channel={ch or 'bundled-chromium'} 启动失败: {str(e)[:100]}")
+    raise RuntimeError(f"浏览器启动失败: {last_err}")
+
 
 p = sync_playwright().start()
-# 持久 profile：登录态、指纹、localStorage 都留在目录里
-ctx = p.chromium.launch_persistent_context(
-    user_data_dir=str(PROFILE_DIR),
-    channel="chrome",
-    headless=False,
-    args=[
-        "--start-maximized",
-        "--disable-blink-features=AutomationControlled",
-        "--disable-infobars",
-    ],
-    viewport=None,
-)
+ctx = _launch(p)
 page = ctx.new_page()
 
 page.add_init_script("""
@@ -62,7 +102,7 @@ for i in range(180):
             try:
                 page.goto("https://www.linkedin.com/feed/", wait_until="domcontentloaded", timeout=30000)
                 time.sleep(3)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             t = page.title()
             u = page.url
@@ -72,7 +112,7 @@ for i in range(180):
                 break
             # 未进 feed 则继续等
             print(f"验证未通过，仍在: {u[:80]}，继续等待...")
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 else:
     print("等待超时")
@@ -87,7 +127,7 @@ for check in range(30):
         if "li_at" in names:
             print(f"✅ 检测到 li_at 会话令牌 (第{check+1}次轮询)")
             break
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     time.sleep(2)
 else:

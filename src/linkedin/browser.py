@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -28,6 +29,21 @@ logger = logging.getLogger(__name__)
 
 # LinkedIn 岗位 URL 中的 job id
 JOB_ID_RE = re.compile(r"/jobs/view/(\d+)|currentJobId=(\d+)")
+
+
+def _channel_candidates() -> list[Optional[str]]:
+    """浏览器 channel 尝试顺序（None = Playwright 自带 chromium）。
+
+    环境变量 LINKEDIN_CHANNEL 可指定首选：
+      chrome（默认，Windows 本机 / 装了 Chrome 的服务器）
+      chromium（强制自带浏览器）
+      msedge 等
+    首选失败时自动回退到自带 chromium（Linux 服务器没装 Chrome 也能跑）。
+    """
+    pref = (os.environ.get("LINKEDIN_CHANNEL") or "chrome").strip() or "chrome"
+    if pref == "chromium":
+        return [None]
+    return [pref, None]
 
 
 class LinkedInBrowser:
@@ -58,26 +74,18 @@ class LinkedInBrowser:
             "--no-first-run",
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         ]
+        if os.environ.get("LINKEDIN_NO_SANDBOX") == "1":
+            args.append("--no-sandbox")  # 云服务器 root 用户环境必需
         if self.profile_dir:
             # 主路径：持久 profile（cookie+指纹+localStorage 全保留）
             profile = Path(self.profile_dir)
             profile.mkdir(parents=True, exist_ok=True)
-            self._context = self._pw.chromium.launch_persistent_context(
-                user_data_dir=str(profile),
-                channel="chrome",
-                headless=self.headless,
-                args=args,
-                viewport=None,  # 跟随 profile 内记忆的窗口大小，保持指纹一致
-            )
+            self._context = self._launch_persistent(profile, args)
             self._browser = self._context.browser  # type: ignore[assignment]
             logger.info("持久 profile 已加载: %s", self.profile_dir)
         else:
             # 兼容路径：launch + storage_state
-            self._browser = self._pw.chromium.launch(
-                channel="chrome",
-                headless=self.headless,
-                args=args,
-            )
+            self._browser = self._launch(args)
             if self.session_file and Path(self.session_file).exists():
                 try:
                     self._context = self._browser.new_context(storage_state=self.session_file)
@@ -96,6 +104,45 @@ class LinkedInBrowser:
             pass
         self._page = self._context.new_page()
         logger.info("浏览器已启动")
+
+    # ---------------------------------------------------------------- 启动（channel 回退）
+
+    def _launch_persistent(self, profile: Path, args: list[str]):
+        assert self._pw is not None
+        last_err: Optional[Exception] = None
+        for ch in _channel_candidates():
+            try:
+                kwargs: dict[str, Any] = {
+                    "user_data_dir": str(profile),
+                    "headless": self.headless,
+                    "args": args,
+                    "viewport": None,  # 跟随 profile 内记忆的窗口大小，保持指纹一致
+                }
+                if ch:
+                    kwargs["channel"] = ch
+                ctx = self._pw.chromium.launch_persistent_context(**kwargs)
+                logger.info("浏览器启动 (channel=%s)", ch or "bundled-chromium")
+                return ctx
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                logger.warning("channel=%s 启动失败: %s", ch or "bundled-chromium", str(e)[:100])
+        raise RuntimeError(f"浏览器启动失败（所有 channel 均不可用）: {last_err}")
+
+    def _launch(self, args: list[str]):
+        assert self._pw is not None
+        last_err: Optional[Exception] = None
+        for ch in _channel_candidates():
+            try:
+                kwargs: dict[str, Any] = {"headless": self.headless, "args": args}
+                if ch:
+                    kwargs["channel"] = ch
+                browser = self._pw.chromium.launch(**kwargs)
+                logger.info("浏览器启动 (channel=%s)", ch or "bundled-chromium")
+                return browser
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                logger.warning("channel=%s 启动失败: %s", ch or "bundled-chromium", str(e)[:100])
+        raise RuntimeError(f"浏览器启动失败（所有 channel 均不可用）: {last_err}")
 
     def stop(self) -> None:
         """关闭浏览器（context+browser 一起关）。"""

@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Topic :: Office/Business",
 ]
 dependencies = [
@@ -30,10 +31,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "ruff>=0.4", "mypy>=1.10"]
 
-[project.entry-points]
-console_scripts = [
-    "linkedin-auto = linkedin.cli:main",
-]
+[project.scripts]
+linkedin-auto = "linkedin.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
