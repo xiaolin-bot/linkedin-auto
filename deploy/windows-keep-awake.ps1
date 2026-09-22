@@ -34,10 +34,14 @@ Write-Host "   已启用"
 
 if ($SetLidNoSleep) {
     Write-Host "== 3) 插电时合盖不睡眠 ==" -ForegroundColor Cyan
-    # LIDACTION GUID: 5ca83367-6e45-459f-a27b-476b1d01c936，值 0 = 不采取任何操作
+    # 部分 OEM 电源方案默认隐藏该设置 → 先取消隐藏（需要管理员权限）
+    powercfg -attributes SUB_BUTTONS 5ca83367-6e45-459f-a27b-476b1d01c936 -ATTRIB_HIDE 2>$null
+    # LIDACTION: 0 = 不采取任何操作（仅交流电生效；电池上仍正常睡眠，便于携带）
     powercfg /setacvalueindex SCHEME_CURRENT SUB_BUTTONS 5ca83367-6e45-459f-a27b-476b1d01c936 0 | Out-Null
     powercfg /setactive SCHEME_CURRENT | Out-Null
-    Write-Host "   已设置（部分笔记本由厂商电源管理接管，可能不生效）"
+    Write-Host "   设置结果（第一行应为 0x00000000 = 插电合盖不休眠；第二行电池保持原样）:"
+    (powercfg /q SCHEME_CURRENT SUB_BUTTONS 5ca83367-6e45-459f-a27b-476b1d01c936 |
+        Select-String "0x" | Select-Object -Last 2) | ForEach-Object { Write-Host "     $($_.Line.Trim())" }
 }
 
 Write-Host "== 4) 验证 ==" -ForegroundColor Cyan
