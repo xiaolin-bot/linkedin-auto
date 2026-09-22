@@ -1,0 +1,5 @@
+# Linux 脚本/服务文件强制 LF（避免 Windows 提交 CRLF 导致服务器 bash/systemd 报错）
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.py text eol=lf
