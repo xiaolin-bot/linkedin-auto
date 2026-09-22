@@ -15,17 +15,37 @@
 | 带宽 | 按量/1M 即可 | 流量很小（只有浏览器交互） |
 | 费用 | 约 ¥30-50/月（24 元-40 元档轻量） | 新用户常有活动 |
 
-> ⚠️ 大陆区域（北京/上海/广州）机器**访问不了 LinkedIn**，必须选**香港/海外**区域。
+**免费方案**：
+- 🆓 **Oracle Cloud 永久免费**（4核24G ARM）：→ 完整攻略见 [oracle-free-tier.md](oracle-free-tier.md)
+- 🆓 腾讯云/阿里云**新用户免费试用**（1-3 个月，到期再决定）
+- ❌ 不推荐 GitHub Actions 等免费 CI：每次运行换机器换 IP → LinkedIn 会话必被吊销
 
-购买时记住：**公网 IP、root 密码**（或 SSH 密钥）。
+> ⚠️ 大陆区域（北京/上海/广州）机器**访问不了 LinkedIn**，必须选**香港/海外**区域。
 
 ---
 
-## 2. 一键部署（在服务器上执行）
+## 2. 一键部署
+
+### 方式 A（推荐）：从 Windows 一条命令远程部署（密钥免密）
+
+前置：把部署公钥粘贴到服务器（Oracle 建实例时可直接粘贴，见
+[oracle-free-tier.md](oracle-free-tier.md) 第 3 步）。
+
+```powershell
+cd C:\linkedin-auto
+powershell -ExecutionPolicy Bypass -File deploy\deploy-from-windows.ps1 -Server <服务器IP>
+# 非 Oracle / root 用户的服务器：
+powershell -ExecutionPolicy Bypass -File deploy\deploy-from-windows.ps1 -Server <IP> -User root
+```
+
+该脚本自动完成：连接测试 → 拉代码 → 安装（依赖/时区/Chrome/xvfb/systemd）→
+上传简历 → 迁移投递历史（去重）→ 验证，并打印最后的 VNC 登录指引。
+
+### 方式 B：手动在服务器上执行
 
 ```bash
 # 1) SSH 登录服务器（Windows PowerShell 直接可用）
-ssh root@<服务器IP>
+ssh root@<服务器IP>          # Oracle Ubuntu 默认用户是 ubuntu
 
 # 2) 拉代码并安装（幂等，可重复执行）
 git clone https://github.com/xiaolin-bot/linkedin-auto.git /opt/linkedin-auto
@@ -35,18 +55,12 @@ sudo bash /opt/linkedin-auto/deploy/install.sh
 脚本会自动完成：系统依赖 → 时区(香港) → Chrome（失败自动回退 Chromium）→ 项目代码 →
 Python 依赖 → xvfb/VNC → systemd 服务与定时器（每天 8/12/16/20 点，±5 分钟随机抖动）。
 
----
-
-## 3. 从 Windows 迁移数据（在你自己的电脑上执行）
-
-需要迁移两样东西：**简历 PDF**、**投递历史 JSON**（历史用于去重，避免重复投已投过的岗位）：
+### 迁移 简历 + 投递历史（方式 B 使用）
 
 ```powershell
 cd C:\linkedin-auto
 powershell -ExecutionPolicy Bypass -File deploy\push-from-windows.ps1 -Server root@<服务器IP>
 ```
-
-（或者手动 scp，见脚本内注释。）
 
 ---
 
@@ -63,6 +77,9 @@ bash /opt/linkedin-auto/deploy/login-vnc.sh
 
 1. **Windows 上开 SSH 隧道**（新的 PowerShell 窗口）：
    ```powershell
+   # 一键脚本（用部署密钥，Oracle 默认用户 ubuntu）
+   powershell -ExecutionPolicy Bypass -File deploy\open-vnc-tunnel.ps1 -Server <服务器IP>
+   # 或手动（密码方式）
    ssh -N -L 5900:localhost:5900 root@<服务器IP>
    ```
 2. **安装 VNC Viewer**（任选其一，免费）：
