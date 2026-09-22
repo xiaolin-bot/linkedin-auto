@@ -1,11 +1,14 @@
 """LinkedIn 定时投递调度：时间窗口 + 关键词轮换 + 日志。
 
-由 run_linkedin_auto.ps1 / 计划任务 linkedin-auto 调用。
+由 setup_task.bat / 计划任务 linkedin-auto 调用。
 直接运行：python -X utf8 run_linkedin_auto.py
+
+数据目录解析顺序（保持原有部署可用）：
+  1. 环境变量 LINKEDIN_DATA_DIR
+  2. C:/freelance-auto/data（若存在，兼容旧部署的登录 profile）
+  3. 本项目 ./data
 """
-import json
-import logging
-import random
+import os
 import sys
 import time
 from datetime import datetime
@@ -14,11 +17,22 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-sys.path.insert(0, "C:/freelance-auto/src")
+BASE = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE / "src"))
 
-from freelance_auto.linkedin.runner import main as runner_main
+_legacy = Path("C:/freelance-auto/data")
+if os.environ.get("LINKEDIN_DATA_DIR"):
+    DATA_DIR = Path(os.environ["LINKEDIN_DATA_DIR"])
+elif _legacy.exists():
+    DATA_DIR = _legacy
+else:
+    DATA_DIR = BASE / "data"
 
-LOG_DIR = Path("C:/freelance-auto/data/linkedin_schedule")
+os.environ.setdefault("LINKEDIN_DATA_DIR", str(DATA_DIR))
+
+from linkedin.runner import main as runner_main  # noqa: E402
+
+LOG_DIR = DATA_DIR / "linkedin_schedule"
 KEYWORDS = [
     "AI product", "AI solution consultant", "SaaS sales", "AI sales",
     "AI business development", "technical sales", "AI automation",
