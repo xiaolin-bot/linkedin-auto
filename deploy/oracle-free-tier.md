@@ -70,7 +70,8 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIADT3uJx0EAVUqVb0LzVe2F+x4BT+s4p6xZ1HHPKQB3O
 
 | 问题 | 处理 |
 |------|------|
-| ARM 一直"容量不足" | 换可用域重试；隔几小时再试；或告诉我，我写 API 轮询脚本自动抢 |
+| ARM 一直"容量不足" | 换可用域重试；或直接用 **自动抢购脚本** `deploy/oracle-grab-arm.py`（官方 API 轮询，放量瞬间自动抢到，已通过桩测试） |
+| 抢购脚本用法 | `pip install oci oci-cli` → `oci setup config` → `python deploy/oracle-grab-arm.py --region us-phoenix-1` |
 | 注册被拒 (ABC) | 换邮箱+换网络+隔天再试；检查卡是否开通境外支付 |
 | 想先用起来 | 也可以先建 **AMD micro (1G)** 实例，但跑 Chrome 很吃力，仅建议过渡 |
 | 账号被回收 | Always Free 闲置 30 天会被回收；我们每天运行，不会闲置 |
