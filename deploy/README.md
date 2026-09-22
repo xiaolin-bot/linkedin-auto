@@ -162,3 +162,27 @@ schtasks /Delete /TN "linkedin-auto" /F
 先按第 4 节用 VNC 登录即可。如果有人实在无法使用 VNC，可改用「导出 Windows 端登录态
 → 服务器导入」的方案（需要专门的导出/导入脚本，联系我补上）。此方案触发 LinkedIn
 "新设备"校验的概率更高，效果不如 VNC 登录稳定。
+
+---
+
+## 10. 备用：本机保活（暂不买服务器时用）
+
+在云端就绪之前（或作为备份），可以用本机跑，但必须修掉 Windows 任务的两个隐藏坑：
+
+| 坑 | 默认值 | 后果 |
+|---|---|---|
+| `DisallowStartIfOnBatteries` | True | 电池供电时**整轮跳过**（哪怕电脑醒着） |
+| `StopIfGoingOnBatteries` | True | 跑到一半拔电 → 本轮被杀 |
+| `StartWhenAvailable` | False | 睡眠期间错过的轮次**永久丢失** |
+| `WakeToRun` | False | 睡眠中不会被执行 |
+
+一键修复（**右键 → 以管理员身份运行**）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\windows-keep-awake.ps1
+# 可选：插电时合盖不睡眠（部分游戏本由厂商电源管理接管，可能不生效）
+powershell -ExecutionPolicy Bypass -File deploy\windows-keep-awake.ps1 -SetLidNoSleep
+```
+
+修好后的行为：**锁屏照跑**、拔电照跑、睡眠错过的轮次开机自动补跑、睡眠中到点可被唤醒执行。
+唯一的硬限制：**关机时不跑**（要真正 7×24 还是得部署云服务器，见第 1-2 节）。
