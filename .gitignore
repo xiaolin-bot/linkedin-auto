@@ -1,6 +1,9 @@
 # ========== 敏感信息：绝不提交 ==========
 .env
 data/
+# 登录态导出文件（含 li_at 凭据，绝不提交！）
+linkedin_state.json
+*.state.json
 
 # ========== Python ==========
 __pycache__/

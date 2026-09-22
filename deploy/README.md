@@ -157,11 +157,30 @@ schtasks /Delete /TN "linkedin-auto" /F
 
 ---
 
-## 9. 备选：免 VNC 的 Cookie 迁移（不推荐首选）
+## 9. 备选：免 VNC 的 Cookie 迁移
 
-先按第 4 节用 VNC 登录即可。如果有人实在无法使用 VNC，可改用「导出 Windows 端登录态
-→ 服务器导入」的方案（需要专门的导出/导入脚本，联系我补上）。此方案触发 LinkedIn
-"新设备"校验的概率更高，效果不如 VNC 登录稳定。
+先按第 4 节用 VNC 登录即可（推荐，最稳）。若 VNC 不方便，可用「登录态导出/导入」方案：
+
+```powershell
+# ① 在有登录态的 Windows 本机执行，导出登录态
+cd C:\linkedin-auto
+python -X utf8 deploy\export-login-windows.py --out D:\linkedin_state.json
+
+# ② 上传到服务器
+scp -i $env:USERPROFILE\.ssh\linkedin-auto-deploy D:\linkedin_state.json ubuntu@<服务器IP>:/tmp/
+
+# ③ 服务器上导入（无桌面 → xvfb）
+ssh -i $env:USERPROFILE\.ssh\linkedin-auto-deploy ubuntu@<服务器IP>
+cd /opt/linkedin-auto
+xvfb-run -a ./.venv/bin/python -X utf8 deploy/import-login-server.py --state /tmp/linkedin_state.json
+rm -f /tmp/linkedin_state.json    # 用完即删（含登录凭据）
+```
+
+已实测：导出 → 导入 → li_at 与 localStorage 均成功还原。
+
+> ⚠️ 此方案触发 LinkedIn "新设备/IP" 校验的概率高于 VNC 登录，**稳定性不如 VNC**；
+> 若导入后投递立即报会话失效，请改用第 4 节 VNC 登录。
+> ⚠️ 导出的 JSON 含登录凭据（li_at），切勿提交到 git / 发给他人（`.gitignore` 已屏蔽）。
 
 ---
 
